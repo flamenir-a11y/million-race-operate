@@ -53,6 +53,17 @@
   .top {
     display: flex; gap: 12px; justify-content: space-between; align-items: flex-end;
     flex-wrap: wrap; margin-bottom: 16px;
+    .logoWrap {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.logoImg {
+  height: 70px;
+  width: auto;
+  object-fit: contain;
+}
   }
 
   .title {
@@ -230,8 +241,10 @@
 
   <body>
     <div class="container">
-      <div class="top">
-        <div>
+     <div class="logoWrap">
+  <img src="logo.png" class="logoImg" alt="לוגו המירוץ למיליון" />
+  <div class="title">המירוץ למיליון – מסביב לעולם</div>
+</div>
           <div class="title">המירוץ למיליון – מסביב לעולם</div>
         </div>
         <div class="chips">
@@ -848,6 +861,7 @@
     </script>
   </body>
 </html>
+
 
 
 
