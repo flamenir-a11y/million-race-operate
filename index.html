@@ -1,0 +1,780 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>המירוץ למיליון – מסביב לעולם (מנהל + הצטרפות)</title>
+
+    <!-- Firebase (Compat) – כדי לעבוד בלי build/React/npm -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+    <style>
+      :root {
+        --bg: #f6f6f7;
+        --card: #ffffff;
+        --ink: #111111;
+        --muted: rgba(0, 0, 0, 0.6);
+        --line: rgba(0, 0, 0, 0.12);
+        --soft: rgba(0, 0, 0, 0.06);
+        --danger: #c62828;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+      }
+      .container { max-width: 980px; margin: 0 auto; padding: 18px; }
+      .top {
+        display: flex; gap: 12px; justify-content: space-between; align-items: flex-end;
+        flex-wrap: wrap; margin-bottom: 14px;
+      }
+      .title { font-size: 22px; font-weight: 800; }
+      .subtitle { font-size: 13px; color: var(--muted); margin-top: 4px; }
+      .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+      .chip { padding: 6px 10px; border-radius: 999px; background: var(--soft); font-size: 12px; font-weight: 700; }
+      .nav { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 14px;
+        box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
+      }
+      .card + .card { margin-top: 12px; }
+      .card h3 { margin: 0; font-size: 16px; }
+      .card p { margin: 8px 0 0; color: var(--muted); font-size: 13px; line-height: 1.4; }
+      .row { display: grid; grid-template-columns: 1fr; gap: 12px; }
+      @media (min-width: 860px) { .row { grid-template-columns: 1fr 1fr; } }
+
+      label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+      input, textarea {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        outline: none;
+        font-size: 14px;
+        background: white;
+      }
+      textarea { min-height: 92px; resize: vertical; }
+      .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+      button {
+        border: none;
+        border-radius: 14px;
+        padding: 10px 12px;
+        font-weight: 800;
+        cursor: pointer;
+        font-size: 13px;
+      }
+      .primary { background: #111; color: white; }
+      .secondary { background: var(--soft); color: #111; }
+      .ghost { background: transparent; color: #111; border: 1px solid var(--line); }
+      .danger { background: var(--danger); color: white; }
+      button:disabled { opacity: 0.6; cursor: not-allowed; }
+      .infoBox {
+        border: 1px solid var(--line);
+        background: var(--soft);
+        border-radius: 14px;
+        padding: 10px 12px;
+        margin-top: 10px;
+      }
+      .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        font-size: 12px;
+        direction: ltr;
+        text-align: left;
+        word-break: break-all;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        overflow: hidden;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+      }
+      th, td {
+        padding: 10px 10px;
+        border-bottom: 1px solid var(--line);
+        text-align: right;
+        vertical-align: top;
+        font-size: 13px;
+      }
+      th { background: var(--soft); font-weight: 800; font-size: 12px; }
+      tr:hover td { background: rgba(0, 0, 0, 0.02); }
+      .progressWrap { margin-top: 6px; height: 8px; background: rgba(0, 0, 0, 0.08); border-radius: 999px; overflow: hidden; }
+      .progressBar { height: 100%; background: #111; width: 0; }
+
+      .stationList { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+      .stationHeader {
+        display: grid;
+        grid-template-columns: 46px 1fr 120px;
+        gap: 10px;
+        background: var(--soft);
+        padding: 10px;
+        font-size: 12px;
+        font-weight: 800;
+      }
+      .stationRow {
+        display: grid;
+        grid-template-columns: 46px 1fr 120px;
+        gap: 10px;
+        align-items: center;
+        padding: 10px;
+        border-top: 1px solid var(--line);
+        background: white;
+      }
+      .stationRow.next { background: #fff8e1; }
+      .small { font-size: 12px; color: var(--muted); margin-top: 4px; }
+      .ok { color: #1b5e20; font-weight: 900; }
+      .muted { color: var(--muted); }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="top">
+        <div>
+          <div class="title">המירוץ למיליון – מסביב לעולם</div>
+          <div class="subtitle">גרסה פשוטה (index.html אחד) · סנכרון בזמן אמת עם Firebase</div>
+        </div>
+        <div class="chips">
+          <span class="chip">8 תחנות</span>
+          <span class="chip">סיום: ישראל</span>
+        </div>
+      </div>
+
+      <div class="nav">
+        <button class="secondary" id="btnHome">בית</button>
+        <button class="secondary" id="btnAdmin">רכז/ת</button>
+        <button class="secondary" id="btnJoin">משתתפים</button>
+      </div>
+
+      <div id="app"></div>
+    </div>
+
+    <script>
+      const firebaseConfig = {
+        apiKey: "AIzaSyC1iJ8K0cXJR3ln-HTqSb0LYcaFmA0Lvi4",
+        authDomain: "million-race.firebaseapp.com",
+        projectId: "million-race",
+        storageBucket: "million-race.firebasestorage.app",
+        messagingSenderId: "74064106162",
+        appId: "1:74064106162:web:22665f46bd39614d0cefab",
+        measurementId: "G-WD1XLMFSMC",
+      };
+
+      firebase.initializeApp(firebaseConfig);
+      const auth = firebase.auth();
+      const db = firebase.firestore();
+
+      const STATIONS = ["מצרים", "הודו", "יפן", "ארה"ב", "ספרד", "אפריקה", "אוסטרליה", "ישראל"];
+      const FINAL_STATION = "ישראל";
+
+      // Basic sanity
+      (function sanity() {
+        console.assert(STATIONS.length === 8, "Expected 8 stations");
+        console.assert(STATIONS[STATIONS.length - 1] === FINAL_STATION, "ישראל אמורה להיות האחרונה");
+      })();
+
+      function makeGameId() {
+        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        let out = "";
+        for (let i = 0; i < 6; i++) out += chars[Math.floor(Math.random() * chars.length)];
+        return out;
+      }
+
+      function shuffle(arr) {
+        const a = arr.slice();
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          const tmp = a[i];
+          a[i] = a[j];
+          a[j] = tmp;
+        }
+        return a;
+      }
+
+      function buildRoute() {
+        const mid = STATIONS.filter(function (s) { return s !== FINAL_STATION; });
+        const shuffled = shuffle(mid);
+        shuffled.push(FINAL_STATION);
+        return shuffled;
+      }
+
+      function now() { return Date.now(); }
+
+      function escapeHtml(s) {
+        return (s ?? "")
+          .toString()
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      function clamp(s, max) {
+        const t = (s ?? "").toString().trim();
+        return t.length > max ? t.slice(0, max) : t;
+      }
+
+      function formatTime(ts) {
+        try { return new Date(ts).toLocaleString(); }
+        catch (e) { return ""; }
+      }
+
+      function parseHash() {
+        const h = window.location.hash || "#/";
+        const clean = h.startsWith("#") ? h.slice(1) : h;
+        const parts = clean.split("?");
+        const path = parts[0] || "/";
+        const qs = parts[1] || "";
+        const params = new URLSearchParams(qs);
+        return { path: path, params: params };
+      }
+
+      function goto(hash) { window.location.hash = hash; }
+
+      let unsub = null;
+
+      async function ensureAnonAuth() {
+        if (auth.currentUser) return;
+        try {
+          await auth.signInAnonymously();
+        } catch (e) {
+          console.error(e);
+          alert("שגיאת התחברות אנונימית. בדקי שב-Firebase Authentication → Anonymous מופעל.");
+        }
+      }
+
+      async function copyText(text) {
+        try {
+          await navigator.clipboard.writeText(text);
+          alert("הועתק ✅");
+        } catch (e) {
+          prompt("העתקה ידנית (Ctrl+C)", text);
+        }
+      }
+
+      function cleanupListener() {
+        try { if (typeof unsub === "function") unsub(); }
+        catch (e) {}
+        unsub = null;
+      }
+
+      function setNavActive(which) {
+        const map = { home: "btnHome", admin: "btnAdmin", join: "btnJoin" };
+        ["btnHome", "btnAdmin", "btnJoin"].forEach(function (id) {
+          const el = document.getElementById(id);
+          if (!el) return;
+          el.classList.remove("primary");
+          el.classList.add("secondary");
+        });
+        const activeId = map[which] || "btnHome";
+        const active = document.getElementById(activeId);
+        if (active) {
+          active.classList.remove("secondary");
+          active.classList.add("primary");
+        }
+      }
+
+      function renderHome() {
+        cleanupListener();
+        setNavActive("home");
+        const app = document.getElementById("app");
+        app.innerHTML =
+          '<div class="row">'
+          + '  <div class="card">'
+          + '    <h3>רכז/ת</h3>'
+          + '    <p>יצירת משחק, קבלת קוד/קישור, וניטור ההתקדמות של כל קבוצה בזמן אמת.</p>'
+          + '    <div class="actions">'
+          + '      <button class="primary" id="goAdmin">התחל / ניהול משחק</button>'
+          + '    </div>'
+          + '  </div>'
+          + '  <div class="card">'
+          + '    <h3>משתתפים</h3>'
+          + '    <p>הצטרפות עם קוד משחק: שם קבוצה + שמות חברים.</p>'
+          + '    <div class="actions">'
+          + '      <button class="primary" id="goJoin">הצטרפות לקבוצה</button>'
+          + '    </div>'
+          + '  </div>'
+          + '</div>';
+
+        document.getElementById("goAdmin").onclick = function () { goto("#/admin"); };
+        document.getElementById("goJoin").onclick = function () { goto("#/join"); };
+      }
+
+      function renderAdminLanding() {
+        cleanupListener();
+        setNavActive("admin");
+        const app = document.getElementById("app");
+
+        app.innerHTML =
+          '<div class="card">'
+          + '  <h3>רכז/ת – יצירת משחק / טעינת משחק</h3>'
+          + '  <p>אחרי יצירת משחק, תקבלי קוד וקישור לשליחה לקבוצות. הנתונים נשמרים רק בזמן המשחק וניתן למחוק בסוף.</p>'
+          + '  <div class="row" style="margin-top:12px;">'
+          + '    <div class="card" style="margin:0;">'
+          + '      <h3 style="font-size:14px;">יצירת משחק חדש</h3>'
+          + '      <div style="margin-top:10px;">'
+          + '        <label>שם רכז/ת (אופציונלי)</label>'
+          + '        <input id="adminName" placeholder="לדוגמה: יעל" />'
+          + '        <div class="actions">'
+          + '          <button class="primary" id="btnCreate">התחל משחק</button>'
+          + '        </div>'
+          + '      </div>'
+          + '    </div>'
+          + '    <div class="card" style="margin:0;">'
+          + '      <h3 style="font-size:14px;">טעינת משחק קיים</h3>'
+          + '      <div style="margin-top:10px;">'
+          + '        <label>קוד משחק</label>'
+          + '        <input id="loadGameId" placeholder="לדוגמה: Q7K2MP" />'
+          + '        <div class="actions">'
+          + '          <button class="secondary" id="btnLoad">טען</button>'
+          + '        </div>'
+          + '      </div>'
+          + '    </div>'
+          + '  </div>'
+          + '</div>';
+
+        document.getElementById("btnCreate").onclick = async function () {
+          await ensureAnonAuth();
+          const adminName = clamp(document.getElementById("adminName").value, 40) || "רכז/ת";
+          const gameId = makeGameId();
+          try {
+            await db.collection("games").doc(gameId).set({
+              gameId: gameId,
+              adminName: adminName,
+              createdAt: now(),
+              createdAtServer: firebase.firestore.FieldValue.serverTimestamp(),
+            });
+            sessionStorage.setItem("million_race_last_game", gameId);
+            goto("#/admin-game?game=" + encodeURIComponent(gameId));
+          } catch (e) {
+            console.error(e);
+            alert("לא הצלחתי ליצור משחק.");
+          }
+        };
+
+        document.getElementById("btnLoad").onclick = async function () {
+          await ensureAnonAuth();
+          const gameId = clamp(document.getElementById("loadGameId").value, 16).toUpperCase();
+          if (!gameId) return;
+          try {
+            const snap = await db.collection("games").doc(gameId).get();
+            if (!snap.exists) return alert("לא נמצא משחק בקוד הזה.");
+            sessionStorage.setItem("million_race_last_game", gameId);
+            goto("#/admin-game?game=" + encodeURIComponent(gameId));
+          } catch (e) {
+            console.error(e);
+            alert("שגיאה בטעינת משחק.");
+          }
+        };
+      }
+
+      function renderAdminGame(gameId) {
+        setNavActive("admin");
+        const app = document.getElementById("app");
+        const base = window.location.origin + window.location.pathname;
+        const joinLink = base + "#/join?game=" + encodeURIComponent(gameId);
+
+        app.innerHTML =
+          '<div class="card">'
+          + '  <h3>ניהול משחק</h3>'
+          + '  <p>קוד: <b>' + escapeHtml(gameId) + '</b></p>'
+          + '  <div class="infoBox">'
+          + '    <div style="font-weight:800; font-size:13px; margin-bottom:6px;">שיתוף</div>'
+          + '    <div class="actions">'
+          + '      <button class="secondary" id="copyCode">העתק קוד</button>'
+          + '      <button class="primary" id="copyLink">העתק קישור</button>'
+          + '      <button class="danger" id="endGame">סיים ומחק</button>'
+          + '    </div>'
+          + '    <div class="mono" style="margin-top:8px;">' + escapeHtml(joinLink) + '</div>'
+          + '  </div>'
+          + '  <div style="margin-top:14px;">'
+          + '    <table id="teamsTable">'
+          + '      <thead><tr>'
+          + '        <th style="width:160px;">קבוצה</th>'
+          + '        <th>חברים</th>'
+          + '        <th style="width:200px;">התקדמות</th>'
+          + '      </tr></thead>'
+          + '      <tbody id="teamsBody">'
+          + '        <tr><td colspan="3" class="muted">טוען קבוצות...</td></tr>'
+          + '      </tbody>'
+          + '    </table>'
+          + '  </div>'
+          + '  <div class="actions" style="margin-top:10px;">'
+          + '    <button class="ghost" id="backAdmin">חזרה</button>'
+          + '  </div>'
+          + '</div>';
+
+        document.getElementById("copyCode").onclick = function () { copyText(gameId); };
+        document.getElementById("copyLink").onclick = function () { copyText(joinLink); };
+        document.getElementById("backAdmin").onclick = function () { goto("#/admin"); };
+
+        document.getElementById("endGame").onclick = async function () {
+          const ok = confirm("לסיים משחק ולמחוק את כל הנתונים? (אי אפשר לשחזר)");
+          if (!ok) return;
+          try {
+            await ensureAnonAuth();
+            const teamsSnap = await db.collection("games").doc(gameId).collection("teams").get();
+            const batch = db.batch();
+            teamsSnap.forEach(function (docSnap) { batch.delete(docSnap.ref); });
+            batch.delete(db.collection("games").doc(gameId));
+            await batch.commit();
+            sessionStorage.removeItem("million_race_last_game");
+            alert("המשחק נמחק.");
+            goto("#/admin");
+          } catch (e) {
+            console.error(e);
+            alert("שגיאה במחיקה.");
+          }
+        };
+
+        cleanupListener();
+        unsub = db.collection("games").doc(gameId).collection("teams")
+          .orderBy("createdAt", "asc")
+          .onSnapshot(function (snap) {
+            const body = document.getElementById("teamsBody");
+            if (!body) return;
+
+            if (snap.empty) {
+              body.innerHTML = '<tr><td colspan="3" class="muted">אין עדיין קבוצות. שלחי את הקוד/קישור כדי שיירשמו.</td></tr>';
+              return;
+            }
+
+            let html = "";
+            snap.forEach(function (docSnap) {
+              const d = docSnap.data() || {};
+              const route = Array.isArray(d.route) && d.route.length ? d.route : STATIONS;
+              const completed = d.completed || {};
+              const done = route.filter(function (s) { return !!completed[s]; }).length;
+              const total = route.length;
+              const pct = total ? Math.round((done / total) * 100) : 0;
+
+              html +=
+                '<tr data-team="' + escapeHtml(docSnap.id) + '" style="cursor:pointer;">'
+                + '  <td><b>' + escapeHtml(d.name || docSnap.id) + '</b>'
+                + '    <div class="small">נרשמה: ' + escapeHtml(formatTime(d.createdAt || 0)) + '</div>'
+                + '  </td>'
+                + '  <td class="muted" style="white-space:pre-wrap;">' + escapeHtml(d.members || "—") + '</td>'
+                + '  <td>'
+                + '    <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--muted);">'
+                + '      <span>' + done + '/' + total + '</span><span>' + pct + '%</span>'
+                + '    </div>'
+                + '    <div class="progressWrap"><div class="progressBar" style="width:' + pct + '%;"></div></div>'
+                + '  </td>'
+                + '</tr>';
+            });
+
+            body.innerHTML = html;
+            Array.from(body.querySelectorAll("tr[data-team]")).forEach(function (tr) {
+              tr.onclick = function () {
+                const teamId = tr.getAttribute("data-team");
+                goto("#/team?game=" + encodeURIComponent(gameId) + "&team=" + encodeURIComponent(teamId));
+              };
+            });
+          }, function (err) {
+            console.error(err);
+            alert("שגיאה בהאזנה לקבוצות. בדקי Firestore Rules (test mode) והתחברות.");
+          });
+      }
+
+      function renderTeam(gameId, teamId) {
+        setNavActive("admin");
+        const app = document.getElementById("app");
+
+        app.innerHTML =
+          '<div class="card" id="teamCard">'
+          + '  <h3>קבוצה</h3>'
+          + '  <p class="muted">טוען...</p>'
+          + '  <div class="actions" style="margin-top:10px;">'
+          + '    <button class="secondary" id="backToTable">חזרה לטבלה</button>'
+          + '    <button class="ghost" id="resetTeam">איפוס התקדמות</button>'
+          + '    <button class="ghost" id="removeTeam">הסר קבוצה</button>'
+          + '  </div>'
+          + '</div>'
+          + '<div class="card">'
+          + '  <h3>תחנות</h3>'
+          + '  <div id="stationWrap" class="muted" style="margin-top:10px;">טוען תחנות...</div>'
+          + '</div>';
+
+        document.getElementById("backToTable").onclick = function () {
+          goto("#/admin-game?game=" + encodeURIComponent(gameId));
+        };
+
+        const teamRef = db.collection("games").doc(gameId).collection("teams").doc(teamId);
+
+        async function doReset() {
+          const ok = confirm("לאפס התקדמות לקבוצה הזו?");
+          if (!ok) return;
+          try {
+            await ensureAnonAuth();
+            await teamRef.update({
+              completed: {},
+              updatedAt: now(),
+              updatedAtServer: firebase.firestore.FieldValue.serverTimestamp(),
+            });
+          } catch (e) {
+            console.error(e);
+            alert("שגיאה באיפוס.");
+          }
+        }
+
+        async function doRemove() {
+          const ok = confirm("להסיר את הקבוצה?");
+          if (!ok) return;
+          try {
+            await ensureAnonAuth();
+            await teamRef.delete();
+            goto("#/admin-game?game=" + encodeURIComponent(gameId));
+          } catch (e) {
+            console.error(e);
+            alert("שגיאה בהסרה.");
+          }
+        }
+
+        document.getElementById("resetTeam").onclick = doReset;
+        document.getElementById("removeTeam").onclick = doRemove;
+
+        cleanupListener();
+        unsub = teamRef.onSnapshot(function (snap) {
+          if (!snap.exists) {
+            alert("הקבוצה לא נמצאה (אולי נמחקה)");
+            goto("#/admin-game?game=" + encodeURIComponent(gameId));
+            return;
+          }
+
+          const d = snap.data() || {};
+          const name = d.name || teamId;
+          const members = d.members || "—";
+          const route = Array.isArray(d.route) && d.route.length ? d.route : buildRoute();
+          const completed = d.completed || {};
+
+          let next = null;
+          for (let i = 0; i < route.length; i++) {
+            const s = route[i];
+            if (!completed[s]) { next = s; break; }
+          }
+
+          const doneCount = route.filter(function (s) { return !!completed[s]; }).length;
+
+          const teamCard = document.getElementById("teamCard");
+          if (teamCard) {
+            teamCard.innerHTML =
+              '<h3>קבוצה: ' + escapeHtml(name) + '</h3>'
+              + '<p><b>חברים:</b> <span class="muted" style="white-space:pre-wrap;">' + escapeHtml(members) + '</span></p>'
+              + '<p class="small">התקדמות: <b>' + doneCount + '/' + route.length + '</b> · '
+              + (next ? ('הבא: <b>' + escapeHtml(next) + '</b>') : '<span class="ok">סיימו 🎉</span>')
+              + '</p>'
+              + '<p class="small">עודכן: ' + escapeHtml(formatTime(d.updatedAt || d.createdAt || 0)) + '</p>'
+              + '<div class="actions" style="margin-top:10px;">'
+              + '  <button class="secondary" id="backToTable">חזרה לטבלה</button>'
+              + '  <button class="ghost" id="resetTeam">איפוס התקדמות</button>'
+              + '  <button class="ghost" id="removeTeam">הסר קבוצה</button>'
+              + '</div>';
+
+            document.getElementById("backToTable").onclick = function () {
+              goto("#/admin-game?game=" + encodeURIComponent(gameId));
+            };
+            document.getElementById("resetTeam").onclick = doReset;
+            document.getElementById("removeTeam").onclick = doRemove;
+          }
+
+          const wrap = document.getElementById("stationWrap");
+          if (!wrap) return;
+
+          let html = ''
+            + '<div class="stationList">'
+            + '  <div class="stationHeader"><div>#</div><div>תחנה</div><div>סטטוס</div></div>';
+
+          for (let idx = 0; idx < route.length; idx++) {
+            const station = route[idx];
+            const done = !!completed[station];
+            const isNext = !done && station === next;
+
+            html +=
+              '<div class="stationRow ' + (isNext ? 'next' : '') + '">'
+              + '  <div class="muted">' + (idx + 1) + '</div>'
+              + '  <div>'
+              + '    <div style="font-weight:900;">' + escapeHtml(station) + '</div>'
+              + (station === FINAL_STATION ? '<div class="small">תחנת סיום</div>' : '')
+              + '  </div>'
+              + '  <div style="display:flex; justify-content:flex-end;">'
+              + '    <button class="' + (done ? 'secondary' : 'primary') + '" data-station="' + escapeHtml(station) + '">' + (done ? 'בטל ✓' : 'סמן ✓') + '</button>'
+              + '  </div>'
+              + '</div>';
+          }
+
+          html += '</div>';
+          wrap.innerHTML = html;
+
+          Array.from(wrap.querySelectorAll("button[data-station]")).forEach(function (btn) {
+            btn.onclick = async function () {
+              const station = btn.getAttribute("data-station");
+              if (!station) return;
+              try {
+                await ensureAnonAuth();
+                const newCompleted = Object.assign({}, completed);
+                newCompleted[station] = !newCompleted[station];
+                await teamRef.update({
+                  completed: newCompleted,
+                  updatedAt: now(),
+                  updatedAtServer: firebase.firestore.FieldValue.serverTimestamp(),
+                });
+              } catch (e) {
+                console.error(e);
+                alert("שגיאה בעדכון.");
+              }
+            };
+          });
+        }, function (err) {
+          console.error(err);
+          alert("שגיאה בהאזנה לקבוצה.");
+        });
+      }
+
+      function b64url(input) {
+        const b64 = btoa(unescape(encodeURIComponent(input)));
+        return b64.replace(/+/g, "-").replace(///g, "_").replace(/=+$/g, "");
+      }
+
+      function renderJoin(gameIdMaybe) {
+        cleanupListener();
+        setNavActive("join");
+        const app = document.getElementById("app");
+        const code = (gameIdMaybe || "").toString().toUpperCase().trim();
+
+        app.innerHTML =
+          '<div class="card">'
+          + '  <h3>משתתפים – הצטרפות</h3>'
+          + '  <p>הכניסו קוד משחק או היכנסו דרך קישור שהרכז/ת שלחו (שכבר כולל את הקוד).</p>'
+          + '  <div class="row" style="margin-top:12px;">'
+          + '    <div class="card" style="margin:0;">'
+          + '      <label>קוד משחק</label>'
+          + '      <input id="joinGameId" placeholder="לדוגמה: Q7K2MP" value="' + escapeHtml(code) + '" />'
+          + '      <div class="actions">'
+          + '        <button class="secondary" id="useGameId">המשך</button>'
+          + '      </div>'
+          + '      <div class="small">אם נכנסתם מקישור – זה כבר אמור להיות מלא.</div>'
+          + '    </div>'
+          + '    <div class="card" style="margin:0;">'
+          + '      <h3 style="font-size:14px;">פרטי הקבוצה</h3>'
+          + '      <label style="margin-top:10px;">שם הקבוצה</label>'
+          + '      <input id="teamName" placeholder="לדוגמה: הפנתרים" />'
+          + '      <label style="margin-top:10px;">שמות חברי/ות הקבוצה</label>'
+          + '      <textarea id="members" placeholder="אפשר בשורות / פסיקים"></textarea>'
+          + '      <div class="actions">'
+          + '        <button class="primary" id="submitJoin">צאו לדרך</button>'
+          + '      </div>'
+          + '    </div>'
+          + '  </div>'
+          + '</div>';
+
+        document.getElementById("useGameId").onclick = function () {
+          const gid = clamp(document.getElementById("joinGameId").value, 16).toUpperCase();
+          if (!gid) return alert("נא להכניס קוד משחק");
+          goto("#/join?game=" + encodeURIComponent(gid));
+        };
+
+        document.getElementById("submitJoin").onclick = async function () {
+          await ensureAnonAuth();
+          const gid = clamp(document.getElementById("joinGameId").value, 16).toUpperCase();
+          const teamName = clamp(document.getElementById("teamName").value, 40);
+          const members = clamp(document.getElementById("members").value, 300);
+
+          if (!gid) return alert("נא להכניס קוד משחק");
+          if (!teamName) return alert("נא למלא שם קבוצה");
+
+          try {
+            const gameSnap = await db.collection("games").doc(gid).get();
+            if (!gameSnap.exists) return alert("המשחק לא נמצא. בדקו שהקוד נכון.");
+
+            const teamId = "team_" + b64url(teamName.toLowerCase().trim());
+            const teamRef = db.collection("games").doc(gid).collection("teams").doc(teamId);
+            const teamSnap = await teamRef.get();
+
+            if (teamSnap.exists) {
+              await teamRef.update({
+                members: members,
+                updatedAt: now(),
+                updatedAtServer: firebase.firestore.FieldValue.serverTimestamp(),
+              });
+            } else {
+              await teamRef.set({
+                id: teamId,
+                name: teamName,
+                nameLower: teamName.toLowerCase(),
+                members: members,
+                route: buildRoute(),
+                completed: {},
+                createdAt: now(),
+                updatedAt: now(),
+                createdAtServer: firebase.firestore.FieldValue.serverTimestamp(),
+                updatedAtServer: firebase.firestore.FieldValue.serverTimestamp(),
+              });
+            }
+
+            alert("בהצלחה במירוץ! 🏁");
+            document.getElementById("teamName").value = "";
+            document.getElementById("members").value = "";
+          } catch (e) {
+            console.error(e);
+            alert("שגיאה ברישום.");
+          }
+        };
+      }
+
+      async function render() {
+        await ensureAnonAuth();
+        const parsed = parseHash();
+        const path = parsed.path;
+        const params = parsed.params;
+
+        if (path === "/") return renderHome();
+        if (path === "/admin") return renderAdminLanding();
+
+        if (path === "/admin-game") {
+          const gameId = (params.get("game") || "").toUpperCase().trim();
+          if (!gameId) return renderAdminLanding();
+          const snap = await db.collection("games").doc(gameId).get();
+          if (!snap.exists) {
+            alert("המשחק לא נמצא (אולי נמחק)");
+            return renderAdminLanding();
+          }
+          sessionStorage.setItem("million_race_last_game", gameId);
+          return renderAdminGame(gameId);
+        }
+
+        if (path === "/team") {
+          const gameId = (params.get("game") || "").toUpperCase().trim();
+          const teamId = (params.get("team") || "").trim();
+          if (!gameId || !teamId) {
+            alert("חסר game/team");
+            return renderAdminLanding();
+          }
+          return renderTeam(gameId, teamId);
+        }
+
+        if (path === "/join") {
+          const gameId = (params.get("game") || "").toUpperCase().trim();
+          return renderJoin(gameId);
+        }
+
+        return renderHome();
+      }
+
+      document.getElementById("btnHome").onclick = function () { goto("#/"); };
+      document.getElementById("btnAdmin").onclick = function () { goto("#/admin"); };
+      document.getElementById("btnJoin").onclick = function () { goto("#/join"); };
+
+      window.addEventListener("hashchange", render);
+      (async function boot() { await render(); })();
+    </script>
+  </body>
+</html>
