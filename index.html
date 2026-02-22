@@ -50,15 +50,27 @@
 
   .container { max-width: 980px; margin: 0 auto; padding: 22px; }
 
-  .top {
-    display: flex; gap: 12px; justify-content: space-between; align-items: flex-end;
-    flex-wrap: wrap; margin-bottom: 16px;
-    .logoWrap {
+.top {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+/* הלוגו – חייב להיות מחוץ ל-.top */
+.logoWrap {
   display: flex;
   align-items: center;
   gap: 16px;
 }
 
+.logoImg {
+  height: 80px;
+  width: auto;
+  object-fit: contain;
+}
 .logoImg {
   height: 80px;
   width: auto;
@@ -351,22 +363,21 @@
         unsub = null;
       }
 
-      function setNavActive(which) {
-        const map = { home: "btnHome", admin: "btnAdmin", join: "btnJoin" };
-        ["btnHome", "btnAdmin", "btnJoin"].forEach(function (id) {
-          const el = $(id);
-          if (!el) return;
-          el.classList.remove("primary");
-          el.classList.add("secondary");
-        });
-        const activeId = map[which] || "btnHome";
-        const active = $(activeId);
-        if (active) {
-          active.classList.remove("secondary");
-          active.classList.add("primary");
-        }
-      }
+function setNavActive(which) {
+  const map = { home: "btnHome", admin: "btnAdmin", join: "btnJoin" };
 
+  ["btnHome", "btnAdmin", "btnJoin"].forEach(function (id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove("activeNav");
+  });
+
+  const activeId = map[which] || "btnHome";
+  const active = document.getElementById(activeId);
+  if (active) {
+    active.classList.add("activeNav");
+  }
+}
       async function ensureAnonAuth() {
         if (auth.currentUser) return;
         try {
@@ -861,6 +872,7 @@
     </script>
   </body>
 </html>
+
 
 
 
